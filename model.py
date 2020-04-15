@@ -50,6 +50,26 @@ class Pickup(db.Model):
                                                                                       self.street_address,
                                                                                       self.zipcode)
 
+class Stores(db.Model):
+    """Stores"""
+    ___tablename__ = "stores"
+    store_id = db.Column(db.Integer, autoincrement=True, primary_key=True)
+    store_name = db.Column(db.String(100), nullable=False)
+    street_address = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(100), nullable=False)
+    zipcode = db.Column(db.String(15), nullable=False)
+    state = db.Column(db.String(10), nullable=False, default="NSW")
+    country = db.Column(db.String(50), nullable=False, default="Australia")
+
+    stocks = db.relationship("Stock", backref="stores")
+
+class Stock(db.Model):
+    """Stock"""
+    __tablename__ = "stocks"
+    store_id = db.Column(db.Integer, db.ForeignKey("stores.store_id"), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey("products.product_id"), nullable=False)
+    stock = db.Column(db.Integer,nullable=Fallse, default=0)
+
 
 class Icon(db.Model):
     """Icon for web usage"""
@@ -80,7 +100,6 @@ class Product(db.Model):
     price = db.Column(db.Numeric(asdecimal=False), nullable=False)  # db.Numeric(asdecimal=False)
     price_per = db.Column(db.Numeric(asdecimal=False), nullable=True)  # db.Numeric(asdecimal=False)
     per_unit = db.Column(db.String(50), nullable=True)
-    aisle = db.Column(db.String(50), nullable=True)
     category = db.Column(db.String(50), nullable=True)
     img = db.Column(db.String(500), nullable=True)
     icon_id = db.Column(db.Integer, db.ForeignKey('icons.icon_id'), nullable=True)
@@ -94,9 +113,7 @@ class Product(db.Model):
                            secondary="product_tags",
                            backref="products")
 
-    delivery_qty = db.relationship("Delivery_Quantity", backref="products")
-
-    order_qty = db.relationship("Order_Quantity", backref="products")
+    stocks = db.relationship("Stock", backref="products")
 
     def __repr__(self):
 
@@ -132,85 +149,6 @@ class Product_Tag(db.Model):
         return "<Product_Tag prod_tag_id={} product_id={} tag_id={}>".format(self.prod_tag_id,
                                                                              self.product_id,
                                                                              self.tag_id)
-
-class Order(db.Model):
-    """An order placed by a customer, composed of Order-Quantities"""
-
-    __tablename__ = "orders"
-
-    order_id = db.Column(db.Integer, autoincrement=True, primary_key=True)
-    customer_id = db.Column(db.Integer, db.ForeignKey("customers.user_id"), nullable=False)
-    placed_at = db.Column(ArrowType, nullable=False)  # or db.DateTime v. db.TimeStamp?
-    total = db.Column(db.Numeric, nullable=False)
-    pickup_id = db.Column(db.Integer, db.ForeignKey("pickups.pickup_id"), nullable=False)
-    received_at = db.Column(ArrowType, nullable=True)  # or db.DateTime v. db.TimeStamp?
-
-    pickup = db.relationship("Pickup", backref="orders")
-
-    quantities = db.relationship("Order_Quantity", backref="orders")
-
-    def __repr__(self):
-
-        return "<Order order_id={} customer_id={} total={} placed_at={} received_at={}>".format(self.order_id,
-                                                                                                self.customer_id,
-                                                                                                self.total,
-                                                                                                self.placed_at,
-                                                                                                self.received_at)
-
-
-class Order_Quantity(db.Model):
-    """An amount of a certain product, in each order"""
-
-    __tablename__ = "order_quantities"
-
-    order_qty_id = db.Column(db.Integer, autoincrement=True, primary_key=True)
-    product_id = db.Column(db.Integer, db.ForeignKey("products.product_id"), nullable=False)
-    product_qty = db.Column(db.Integer, nullable=False, default=1)
-    product_price = db.Column(db.Numeric(asdecimal=False), nullable=False) 
-    order_id = db.Column(db.Integer, db.ForeignKey("orders.order_id"), nullable=False)
-
-    def __repr__(self):
-
-        return "<Order_Quantity order_qty_id={} product_id={} product_qty={} order_id={}>".format(self.order_qty_id,
-                                                                                                  self.product_id,
-                                                                                                  self.product_qty,
-                                                                                                  self.order_id)
-
-class Delivery(db.Model):
-    """A delivery of incoming products, composed of Delivery-Quantities"""
-
-    __tablename__ = "deliveries"
-
-    delivery_id = db.Column(db.Integer, autoincrement=True, primary_key=True)
-    vendor = db.Column(db.String(500), nullable=True)
-    received_at = db.Column(ArrowType, nullable=False)  # or db.DateTime v. db.TimeStamp?
-
-    quantities = db.relationship("Delivery_Quantity", backref="deliveries")
-
-    def __repr__(self):
-
-        return "<Delivery delivery_id={} vendor={} received_at={}>".format(self.delivery_id,
-                                                                           self.vendor,
-                                                                           self.received_at)
-
-class Delivery_Quantity(db.Model):
-    """An amount of a certain product, in each delivery"""
-
-    __tablename__ = "delivery_quantities"
-
-    deliv_qty_id = db.Column(db.Integer, autoincrement=True, primary_key=True)
-    product_id = db.Column(db.Integer, db.ForeignKey("products.product_id"), nullable=False)
-    product_qty = db.Column(db.Integer, nullable=False)
-    delivery_id = db.Column(db.Integer, db.ForeignKey("deliveries.delivery_id"), nullable=False)
-
-    def __repr__(self):
-
-        return "<Delivery_Quantity deliv_qty_id={} product_id={} product_qty={} delivery_id={}>".format(self.deliv_qty_id,
-                                                                                                        self.product_id,
-                                                                                                        self.product_qty,
-                                                                                                        self.delivery_id)
-    
-
 
 def example_data():
     """Populate test database"""
